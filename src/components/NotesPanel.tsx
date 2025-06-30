@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { StickyNote, Save, X, Plus, BookOpen, Lightbulb, Code, Target } from 'lucide-react';
+import { StickyNote, Save, X, Plus, BookOpen, Lightbulb, Code, Target, Sparkles, FileText } from 'lucide-react';
 import { useLearning } from '../contexts/LearningContext';
 
 interface NotesPanelProps {
@@ -838,48 +838,48 @@ const NotesPanel: React.FC<NotesPanelProps> = ({ hookId, isOpen, onClose }) => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 400 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 h-full w-96 bg-white border-l border-slate-200 shadow-2xl z-50 flex flex-col"
+            className="fixed right-0 top-0 h-full w-[28rem] bg-white border-l border-slate-200 shadow-2xl z-50 flex flex-col"
           >
-            <div className="flex-shrink-0 bg-blue-600 text-white p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-white/20 rounded-xl">
-                    <BookOpen size={20} />
+            <div className="flex-shrink-0 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-8">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-sm">
+                    <BookOpen size={24} />
                   </div>
                   <div>
-                    <h3 className="font-bold text-xl">{getHookTitle(hookId)}</h3>
+                    <h3 className="font-bold text-2xl">{getHookTitle(hookId)}</h3>
                     <p className="text-blue-100 text-sm">Learning Resources</p>
                   </div>
                 </div>
                 <button
                   onClick={onClose}
-                  className="p-2.5 hover:bg-white/20 rounded-xl transition-colors"
+                  className="p-3 hover:bg-white/20 rounded-2xl transition-colors"
                 >
                   <X size={20} />
                 </button>
               </div>
 
-              <div className="flex bg-white/20 rounded-xl p-1">
+              <div className="flex bg-white/20 rounded-2xl p-1.5 backdrop-blur-sm">
                 <button
                   onClick={() => setActiveTab('guide')}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold transition-all ${
+                  className={`flex-1 flex items-center justify-center gap-3 px-6 py-4 rounded-xl text-sm font-semibold transition-all ${
                     activeTab === 'guide'
                       ? 'bg-white text-blue-600 shadow-lg'
                       : 'text-blue-100 hover:text-white hover:bg-white/10'
                   }`}
                 >
-                  <Lightbulb size={16} />
+                  <Lightbulb size={18} />
                   Study Guide
                 </button>
                 <button
                   onClick={() => setActiveTab('notes')}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold transition-all ${
+                  className={`flex-1 flex items-center justify-center gap-3 px-6 py-4 rounded-xl text-sm font-semibold transition-all ${
                     activeTab === 'notes'
                       ? 'bg-white text-blue-600 shadow-lg'
                       : 'text-blue-100 hover:text-white hover:bg-white/10'
                   }`}
                 >
-                  <StickyNote size={16} />
+                  <StickyNote size={18} />
                   My Notes
                   {hasUnsavedChanges && (
                     <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
@@ -890,17 +890,17 @@ const NotesPanel: React.FC<NotesPanelProps> = ({ hookId, isOpen, onClose }) => {
 
             <div className="flex-1 overflow-hidden">
               {activeTab === 'guide' ? (
-                <div className="h-full overflow-y-auto p-6">
+                <div className="h-full overflow-y-auto p-8">
                   <div className="prose prose-sm max-w-none">
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="p-2 bg-blue-600 rounded-xl">
-                          <Target size={18} className="text-white" />
+                    <div className="bg-gradient-to-br from-blue-50 to-purple-50 border border-blue-200 rounded-2xl p-8 mb-8">
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl">
+                          <Target size={20} className="text-white" />
                         </div>
-                        <span className="font-bold text-blue-900 text-lg">Study Guide</span>
+                        <span className="font-bold text-blue-900 text-xl">Study Guide</span>
                       </div>
                       <p className="text-blue-800 text-sm leading-relaxed">
-                        Comprehensive guide with examples, best practices, and patterns.
+                        Comprehensive guide with examples, best practices, and patterns for mastering this hook.
                       </p>
                     </div>
                     
@@ -911,21 +911,21 @@ const NotesPanel: React.FC<NotesPanelProps> = ({ hookId, isOpen, onClose }) => {
                 </div>
               ) : (
                 <div className="h-full flex flex-col">
-                  <div className="flex-1 p-6">
+                  <div className="flex-1 p-8">
                     {notes.trim() === '' && (
-                      <div className="text-center py-12">
-                        <div className="p-6 bg-slate-50 rounded-2xl mb-6 inline-block">
-                          <StickyNote size={64} className="text-slate-300 mx-auto" />
+                      <div className="text-center py-16">
+                        <div className="p-8 bg-gradient-to-br from-slate-50 to-blue-50 rounded-3xl mb-8 inline-block border border-slate-200">
+                          <StickyNote size={80} className="text-slate-300 mx-auto" />
                         </div>
-                        <h4 className="text-xl font-bold text-slate-600 mb-3">No Notes Yet</h4>
-                        <p className="text-slate-500 text-sm mb-6 leading-relaxed">
-                          Start taking personalized notes or load the study guide.
+                        <h4 className="text-2xl font-bold text-slate-600 mb-4">No Notes Yet</h4>
+                        <p className="text-slate-500 text-sm mb-8 leading-relaxed max-w-sm mx-auto">
+                          Start taking personalized notes or load the comprehensive study guide to get started.
                         </p>
                         <button
                           onClick={loadDefaultNotes}
-                          className="flex items-center gap-3 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors mx-auto shadow-lg font-semibold"
+                          className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl hover:from-blue-700 hover:to-purple-700 transition-all mx-auto shadow-lg font-semibold hover:shadow-xl transform hover:-translate-y-1"
                         >
-                          <Plus size={18} />
+                          <Sparkles size={20} />
                           Load Study Guide
                         </button>
                       </div>
@@ -937,14 +937,14 @@ const NotesPanel: React.FC<NotesPanelProps> = ({ hookId, isOpen, onClose }) => {
                         onChange={handleNotesChange}
                         onKeyDown={handleKeyDown}
                         placeholder="Take notes about this hook... (Ctrl+S to save)"
-                        className="w-full h-full resize-none border border-slate-200 rounded-xl p-6 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm leading-relaxed bg-slate-50"
+                        className="w-full h-full resize-none border border-slate-200 rounded-2xl p-6 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm leading-relaxed bg-slate-50"
                       />
                     )}
                   </div>
 
-                  <div className="flex-shrink-0 p-6 border-t border-slate-100 bg-slate-50">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="text-xs">
+                  <div className="flex-shrink-0 p-8 border-t border-slate-100 bg-gradient-to-r from-slate-50 to-blue-50">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="text-sm">
                         {hasUnsavedChanges ? (
                           <span className="flex items-center gap-2 text-amber-600 font-medium">
                             <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
@@ -960,10 +960,10 @@ const NotesPanel: React.FC<NotesPanelProps> = ({ hookId, isOpen, onClose }) => {
                       <button
                         onClick={saveNotes}
                         disabled={!hasUnsavedChanges}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-semibold"
+                        className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-semibold shadow-lg"
                       >
                         <Save size={16} />
-                        Save
+                        Save Notes
                       </button>
                     </div>
                     <div className="text-xs text-slate-500 flex items-center gap-2">

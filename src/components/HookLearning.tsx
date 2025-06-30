@@ -14,7 +14,15 @@ import {
   BookmarkPlus,
   MessageSquare,
   Code,
-  Target
+  Target,
+  Search,
+  Filter,
+  Star,
+  Zap,
+  Award,
+  Play,
+  Pause,
+  RotateCcw
 } from 'lucide-react';
 import { useLearning } from '../contexts/LearningContext';
 import { hooks } from '../data/hooks';
@@ -49,10 +57,15 @@ const HookLearning: React.FC<HookLearningProps> = ({
   const [showNotes, setShowNotes] = useState(false);
   const [showQuiz, setShowQuiz] = useState(false);
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterDifficulty, setFilterDifficulty] = useState<string>('all');
+  const [studyTimer, setStudyTimer] = useState(0);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
 
   useEffect(() => {
     if (selectedHook) {
       setSessionStartTime(new Date());
+      setIsTimerRunning(true);
       updateProgress(selectedHook, { lastVisited: new Date() });
     }
 
@@ -66,6 +79,17 @@ const HookLearning: React.FC<HookLearningProps> = ({
     };
   }, [selectedHook]);
 
+  // Study timer effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isTimerRunning) {
+      interval = setInterval(() => {
+        setStudyTimer(prev => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isTimerRunning]);
+
   const currentHook = hooks.find(h => h.id === selectedHook);
   const currentProgress = selectedHook ? progress[selectedHook] : null;
   const currentQuiz = quizzes.find(q => q.hookId === selectedHook);
@@ -73,6 +97,13 @@ const HookLearning: React.FC<HookLearningProps> = ({
   const currentIndex = hooks.findIndex(h => h.id === selectedHook);
   const prevHook = currentIndex > 0 ? hooks[currentIndex - 1] : null;
   const nextHook = currentIndex < hooks.length - 1 ? hooks[currentIndex + 1] : null;
+
+  const filteredHooks = hooks.filter(hook => {
+    const matchesSearch = hook.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         hook.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDifficulty = filterDifficulty === 'all' || hook.difficulty === filterDifficulty;
+    return matchesSearch && matchesDifficulty;
+  });
 
   const toggleBookmark = () => {
     if (selectedHook) {
@@ -93,6 +124,12 @@ const HookLearning: React.FC<HookLearningProps> = ({
         completed: score >= 70,
       });
     }
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   const getHookTitle = (hookId: string) => {
@@ -147,16 +184,20 @@ const HookLearning: React.FC<HookLearningProps> = ({
       default:
         return (
           <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-            <div className="p-8 bg-blue-50 rounded-3xl mb-8">
-              <Code size={64} className="text-blue-600 mx-auto" />
-            </div>
-            <h2 className="text-3xl font-bold text-slate-900 mb-4">Choose a Hook to Learn</h2>
-            <p className="text-lg text-slate-600 mb-8 max-w-md">
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="p-12 bg-gradient-to-br from-blue-50 to-purple-50 rounded-3xl mb-8 border border-blue-200"
+            >
+              <Code size={80} className="text-blue-600 mx-auto" />
+            </motion.div>
+            <h2 className="text-4xl font-bold text-slate-900 mb-4">Choose a Hook to Learn</h2>
+            <p className="text-lg text-slate-600 mb-8 max-w-md leading-relaxed">
               Select a React hook from the sidebar to start your interactive learning journey
             </p>
             <button
               onClick={() => setShowSidebar(true)}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-semibold"
+              className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl hover:from-blue-700 hover:to-purple-700 transition-all font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1"
             >
               <Menu size={20} />
               Browse Hooks
@@ -175,12 +216,26 @@ const HookLearning: React.FC<HookLearningProps> = ({
     }
   };
 
+  const getHookIcon = (hookId: string) => {
+    const icons = {
+      useState: '🎯',
+      useEffect: '⚡',
+      useContext: '🔗',
+      useReducer: '⚙️',
+      useCallback: '🚀',
+      useMemo: '🧠',
+      useRef: '📌',
+      custom: '🛠️'
+    };
+    return icons[hookId as keyof typeof icons] || '⚛️';
+  };
+
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-slate-50">
       {/* Mobile Menu Button */}
       <button
         onClick={() => setShowSidebar(true)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-3 bg-white rounded-xl shadow-lg border border-slate-200 hover:shadow-xl transition-shadow"
+        className="lg:hidden fixed top-6 left-6 z-50 p-3 bg-white rounded-2xl shadow-lg border border-slate-200 hover:shadow-xl transition-all hover:scale-105"
       >
         <Menu size={20} className="text-slate-700" />
       </button>
@@ -202,99 +257,136 @@ const HookLearning: React.FC<HookLearningProps> = ({
             
             {/* Sidebar Content */}
             <motion.div
-              initial={{ x: -320 }}
+              initial={{ x: -400 }}
               animate={{ x: 0 }}
-              exit={{ x: -320 }}
+              exit={{ x: -400 }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="lg:relative fixed left-0 top-0 h-full w-80 bg-white border-r border-slate-200 shadow-xl lg:shadow-none z-50 flex flex-col"
+              className="lg:relative fixed left-0 top-0 h-full w-96 bg-white border-r border-slate-200 shadow-2xl lg:shadow-none z-50 flex flex-col"
             >
               {/* Sidebar Header */}
-              <div className="p-6 border-b border-slate-200 bg-slate-50">
-                <div className="flex items-center justify-between mb-4">
+              <div className="p-6 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-purple-50">
+                <div className="flex items-center justify-between mb-6">
                   <button
                     onClick={onBackToDashboard}
-                    className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors font-medium"
+                    className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors font-medium group"
                   >
-                    <ArrowLeft size={18} />
+                    <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
                     Dashboard
                   </button>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-2">
                     <button
                       onClick={onSettingsOpen}
-                      className="p-2 hover:bg-slate-200 rounded-lg transition-colors"
+                      className="p-2 hover:bg-white/60 rounded-xl transition-colors"
                     >
                       <Settings size={16} className="text-slate-600" />
                     </button>
                     <button
                       onClick={() => setShowSidebar(false)}
-                      className="lg:hidden p-2 hover:bg-slate-200 rounded-lg transition-colors"
+                      className="lg:hidden p-2 hover:bg-white/60 rounded-xl transition-colors"
                     >
                       <X size={16} className="text-slate-600" />
                     </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-600 rounded-xl">
-                    <Code className="text-white" size={20} />
+                
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-lg">
+                    <Code className="text-white" size={24} />
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-slate-900">React Hooks</h2>
+                    <h2 className="text-xl font-bold text-slate-900">React Hooks</h2>
                     <p className="text-sm text-slate-600">Interactive Learning</p>
                   </div>
+                </div>
+
+                {/* Search and Filter */}
+                <div className="space-y-3">
+                  <div className="relative">
+                    <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search hooks..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    />
+                  </div>
+                  
+                  <select
+                    value={filterDifficulty}
+                    onChange={(e) => setFilterDifficulty(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  >
+                    <option value="all">All Difficulties</option>
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                  </select>
                 </div>
               </div>
 
               {/* Hooks List */}
               <div className="flex-1 overflow-y-auto p-4">
-                <div className="space-y-1">
-                  {hooks.map((hook) => {
+                <div className="space-y-2">
+                  {filteredHooks.map((hook) => {
                     const hookProgress = progress[hook.id];
                     const isCompleted = hookProgress?.completed || false;
                     const isSelected = selectedHook === hook.id;
+                    const isBookmarked = hookProgress?.bookmarked || false;
                     
                     return (
-                      <button
+                      <motion.button
                         key={hook.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
                         onClick={() => {
                           onHookSelect(hook.id);
                           setShowSidebar(false);
                         }}
-                        className={`w-full text-left p-4 rounded-xl transition-all ${
+                        className={`w-full text-left p-4 rounded-2xl transition-all duration-200 ${
                           isSelected 
-                            ? 'bg-blue-600 text-white shadow-lg transform scale-[1.02]' 
-                            : 'hover:bg-slate-50 border border-transparent hover:border-slate-200'
+                            ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg transform scale-[1.02]' 
+                            : 'hover:bg-slate-50 border border-transparent hover:border-slate-200 hover:shadow-sm'
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`p-2.5 rounded-lg ${
-                            isSelected 
-                              ? 'bg-white/20' 
-                              : 'bg-slate-100'
-                          }`}>
-                            <BookOpen size={16} className={isSelected ? 'text-white' : 'text-slate-600'} />
+                          <div className={`text-2xl ${isSelected ? 'grayscale-0' : ''}`}>
+                            {getHookIcon(hook.id)}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
-                              <span className={`font-semibold truncate ${isSelected ? 'text-white' : 'text-slate-900'}`}>
+                              <span className={`font-bold truncate ${isSelected ? 'text-white' : 'text-slate-900'}`}>
                                 {hook.name}
                               </span>
-                              {isCompleted && (
-                                <CheckCircle size={14} className={isSelected ? 'text-white' : 'text-emerald-600'} />
-                              )}
+                              <div className="flex items-center gap-1">
+                                {isCompleted && (
+                                  <CheckCircle size={14} className={isSelected ? 'text-emerald-300' : 'text-emerald-600'} />
+                                )}
+                                {isBookmarked && (
+                                  <Star size={14} className={isSelected ? 'text-amber-300' : 'text-amber-500'} />
+                                )}
+                              </div>
                             </div>
-                            <p className={`text-sm leading-tight ${isSelected ? 'text-blue-100' : 'text-slate-600'}`}>
+                            <p className={`text-sm leading-tight mb-3 ${isSelected ? 'text-blue-100' : 'text-slate-600'}`}>
                               {hook.description}
                             </p>
-                            <span className={`inline-block mt-2 px-2 py-1 text-xs rounded-md font-medium border ${
-                              isSelected 
-                                ? 'bg-white/20 text-white border-white/30' 
-                                : getDifficultyColor(hook.difficulty)
-                            }`}>
-                              {hook.difficulty}
-                            </span>
+                            <div className="flex items-center justify-between">
+                              <span className={`inline-block px-2 py-1 text-xs rounded-lg font-medium border ${
+                                isSelected 
+                                  ? 'bg-white/20 text-white border-white/30' 
+                                  : getDifficultyColor(hook.difficulty)
+                              }`}>
+                                {hook.difficulty}
+                              </span>
+                              {hookProgress?.timeSpent && (
+                                <span className={`text-xs ${isSelected ? 'text-blue-200' : 'text-slate-500'}`}>
+                                  {Math.floor(hookProgress.timeSpent / 60)}m studied
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </button>
+                      </motion.button>
                     );
                   })}
                 </div>
@@ -309,28 +401,28 @@ const HookLearning: React.FC<HookLearningProps> = ({
         {/* Top Navigation */}
         {selectedHook && currentHook && (
           <div className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-30">
-            <div className="max-w-6xl mx-auto px-4 lg:px-8 py-4">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-blue-100 rounded-xl">
-                    <Target size={24} className="text-blue-600" />
+            <div className="max-w-6xl mx-auto px-6 lg:px-8 py-6">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                <div className="flex items-center gap-6">
+                  <div className="p-4 bg-gradient-to-r from-blue-100 to-purple-100 rounded-2xl border border-blue-200">
+                    <Target size={28} className="text-blue-600" />
                   </div>
                   <div>
-                    <h1 className="text-2xl font-bold text-slate-900">
+                    <h1 className="text-3xl font-bold text-slate-900 mb-2">
                       {getHookTitle(selectedHook)}
                     </h1>
-                    <div className="flex items-center gap-3 text-sm text-slate-600">
-                      <span className={`px-2 py-1 rounded-md font-medium border ${getDifficultyColor(currentHook.difficulty)}`}>
+                    <div className="flex items-center gap-4 text-sm text-slate-600">
+                      <span className={`px-3 py-1 rounded-lg font-medium border ${getDifficultyColor(currentHook.difficulty)}`}>
                         {currentHook.difficulty}
                       </span>
                       {currentProgress?.timeSpent && (
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-2">
                           <Clock size={14} />
                           <span>{Math.floor(currentProgress.timeSpent / 60)}m studied</span>
                         </div>
                       )}
                       {currentProgress?.completed && (
-                        <div className="flex items-center gap-1 text-emerald-600">
+                        <div className="flex items-center gap-2 text-emerald-600">
                           <CheckCircle size={14} />
                           <span>Completed</span>
                         </div>
@@ -339,10 +431,28 @@ const HookLearning: React.FC<HookLearningProps> = ({
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
+                  {/* Study Timer */}
+                  <div className="flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-xl">
+                    <Clock size={16} className="text-slate-600" />
+                    <span className="font-mono text-sm font-medium text-slate-700">
+                      {formatTime(studyTimer)}
+                    </span>
+                    <button
+                      onClick={() => setIsTimerRunning(!isTimerRunning)}
+                      className="p-1 hover:bg-slate-200 rounded-lg transition-colors"
+                    >
+                      {isTimerRunning ? (
+                        <Pause size={14} className="text-slate-600" />
+                      ) : (
+                        <Play size={14} className="text-slate-600" />
+                      )}
+                    </button>
+                  </div>
+
                   <button
                     onClick={toggleBookmark}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all text-sm font-medium ${
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all text-sm font-medium ${
                       currentProgress?.bookmarked 
                         ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' 
                         : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -356,7 +466,7 @@ const HookLearning: React.FC<HookLearningProps> = ({
                   
                   <button
                     onClick={() => setShowNotes(true)}
-                    className="flex items-center gap-2 px-3 py-2 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-all text-sm font-medium"
+                    className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-all text-sm font-medium"
                   >
                     <MessageSquare size={16} />
                     <span className="hidden sm:inline">Notes</span>
@@ -365,7 +475,7 @@ const HookLearning: React.FC<HookLearningProps> = ({
                   {currentQuiz && (
                     <button
                       onClick={() => setShowQuiz(true)}
-                      className="flex items-center gap-2 px-3 py-2 bg-blue-100 text-blue-700 rounded-xl hover:bg-blue-200 transition-all text-sm font-medium"
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-xl hover:bg-blue-200 transition-all text-sm font-medium"
                     >
                       <Brain size={16} />
                       <span className="hidden sm:inline">Quiz</span>
@@ -375,7 +485,7 @@ const HookLearning: React.FC<HookLearningProps> = ({
                   {!currentProgress?.completed && (
                     <button
                       onClick={markAsCompleted}
-                      className="flex items-center gap-2 px-3 py-2 bg-emerald-100 text-emerald-700 rounded-xl hover:bg-emerald-200 transition-all text-sm font-medium"
+                      className="flex items-center gap-2 px-4 py-2 bg-emerald-100 text-emerald-700 rounded-xl hover:bg-emerald-200 transition-all text-sm font-medium"
                     >
                       <CheckCircle size={16} />
                       <span className="hidden sm:inline">Complete</span>
@@ -388,9 +498,9 @@ const HookLearning: React.FC<HookLearningProps> = ({
         )}
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto bg-slate-50">
-          <div className="max-w-6xl mx-auto px-4 lg:px-8 py-8">
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 to-white">
+          <div className="max-w-6xl mx-auto px-6 lg:px-8 py-8">
+            <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
               <div className="p-8">
                 {renderContent()}
               </div>
@@ -400,39 +510,45 @@ const HookLearning: React.FC<HookLearningProps> = ({
 
         {/* Bottom Navigation */}
         {selectedHook && (
-          <div className="bg-white border-t border-slate-200 p-4 shadow-sm">
+          <div className="bg-white border-t border-slate-200 p-6 shadow-sm">
             <div className="max-w-6xl mx-auto flex items-center justify-between">
               <button
                 onClick={() => prevHook && onHookSelect(prevHook.id)}
                 disabled={!prevHook}
-                className="flex items-center gap-2 px-4 py-2 text-slate-600 hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                className="flex items-center gap-3 px-6 py-3 text-slate-600 hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium rounded-xl hover:bg-slate-50 group"
               >
-                <ChevronLeft size={20} />
-                <span className="hidden sm:inline">
-                  {prevHook ? prevHook.name : 'Previous'}
-                </span>
+                <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+                <div className="text-left">
+                  <div className="text-xs text-slate-500">Previous</div>
+                  <div className="hidden sm:block">
+                    {prevHook ? prevHook.name : 'None'}
+                  </div>
+                </div>
               </button>
               
-              <div className="flex items-center gap-2 text-sm text-slate-500">
-                <span>{currentIndex + 1}</span>
-                <div className="w-16 h-1 bg-slate-200 rounded-full">
+              <div className="flex items-center gap-4 text-sm text-slate-500">
+                <span className="font-medium">{currentIndex + 1}</span>
+                <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden">
                   <div 
-                    className="h-1 bg-blue-600 rounded-full transition-all duration-300"
+                    className="h-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full transition-all duration-500"
                     style={{ width: `${((currentIndex + 1) / hooks.length) * 100}%` }}
                   />
                 </div>
-                <span>{hooks.length}</span>
+                <span className="font-medium">{hooks.length}</span>
               </div>
               
               <button
                 onClick={() => nextHook && onHookSelect(nextHook.id)}
                 disabled={!nextHook}
-                className="flex items-center gap-2 px-4 py-2 text-slate-600 hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                className="flex items-center gap-3 px-6 py-3 text-slate-600 hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium rounded-xl hover:bg-slate-50 group"
               >
-                <span className="hidden sm:inline">
-                  {nextHook ? nextHook.name : 'Next'}
-                </span>
-                <ChevronRight size={20} />
+                <div className="text-right">
+                  <div className="text-xs text-slate-500">Next</div>
+                  <div className="hidden sm:block">
+                    {nextHook ? nextHook.name : 'None'}
+                  </div>
+                </div>
+                <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
           </div>
